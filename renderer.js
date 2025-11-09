@@ -266,12 +266,12 @@ backupBtn.addEventListener('click', async () => {
 
   if (errors.length === 0) {
     backupResult.className = 'result-section success';
-    backupResult.innerHTML = `<strong>✅ Success!</strong><br>Backed up ${uploaded} file(s) to ${repo}`;
+    backupResult.innerHTML = `<strong>✅ Success!</strong><br>Backed up ${uploaded} file(s) to ${escapeHtml(repo)}`;
     selectedFiles = [];
     renderFilesList();
   } else {
     backupResult.className = 'result-section error';
-    backupResult.innerHTML = `<strong>⚠️ Partial Success</strong><br>Uploaded ${uploaded}/${total} files<br><br>Errors:<br>${errors.join('<br>')}`;
+    backupResult.innerHTML = `<strong>⚠️ Partial Success</strong><br>Uploaded ${uploaded}/${total} files<br><br>Errors:<br>${errors.map(e => escapeHtml(e)).join('<br>')}`;
   }
 });
 
@@ -387,13 +387,13 @@ restoreBtn.addEventListener('click', async () => {
 
   if (errors.length === 0) {
     restoreResult.className = 'result-section success';
-    restoreResult.innerHTML = `<strong>✅ Success!</strong><br>Restored ${restored} file(s) to ${restoreLocation.value}`;
+    restoreResult.innerHTML = `<strong>✅ Success!</strong><br>Restored ${restored} file(s) to ${escapeHtml(restoreLocation.value)}`;
     selectedRestoreFiles = [];
     document.querySelectorAll('.file-checkbox').forEach(cb => cb.checked = false);
     updateRestoreSelection();
   } else {
     restoreResult.className = 'result-section error';
-    restoreResult.innerHTML = `<strong>⚠️ Partial Success</strong><br>Restored ${restored}/${total} files<br><br>Errors:<br>${errors.join('<br>')}`;
+    restoreResult.innerHTML = `<strong>⚠️ Partial Success</strong><br>Restored ${restored}/${total} files<br><br>Errors:<br>${errors.map(e => escapeHtml(e)).join('<br>')}`;
   }
 });
 
@@ -416,6 +416,12 @@ tabBtns.forEach(btn => {
 });
 
 // Helper functions
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 function showError(message) {
   // You can implement a toast notification system here
   alert(message);
