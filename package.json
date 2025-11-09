@@ -1,0 +1,23 @@
+{
+  "name": "gitbackup",
+  "version": "1.0.0",
+  "description": "Gitbased backup",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "electron",
+    "github",
+    "backup",
+    "git"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@octokit/rest": "^22.0.1",
+    "electron": "^39.1.1",
+    "electron-store": "^11.0.2"
+  }
+}
