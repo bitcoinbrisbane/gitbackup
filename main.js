@@ -107,15 +107,90 @@ ipcMain.handle('select-folder', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openDirectory']
   });
-  
+
   if (result.canceled) {
     return { canceled: true };
   }
-  
-  return { 
-    canceled: false, 
+
+  return {
+    canceled: false,
     folder: result.filePaths[0]
   };
+});
+
+// Handle folder selection for backup (multiple folders)
+ipcMain.handle('select-folders', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory', 'multiSelections']
+  });
+
+  if (result.canceled) {
+    return { canceled: true };
+  }
+
+  return {
+    canceled: false,
+    folders: result.filePaths
+  };
+});
+
+// Recursively get all files in a folder
+function getFilesRecursively(dirPath, baseDir = dirPath) {
+  const files = [];
+
+  function traverse(currentPath) {
+    const items = fs.readdirSync(currentPath);
+
+    for (const item of items) {
+      const fullPath = path.join(currentPath, item);
+      const stat = fs.statSync(fullPath);
+
+      if (stat.isDirectory()) {
+        // Skip node_modules, .git, and other common directories
+        if (item === 'node_modules' || item === '.git' || item === '.DS_Store') {
+          continue;
+        }
+        traverse(fullPath);
+      } else if (stat.isFile()) {
+        const relativePath = path.relative(baseDir, fullPath);
+        files.push({
+          absolutePath: fullPath,
+          relativePath: relativePath,
+          name: item,
+          size: stat.size
+        });
+      }
+    }
+  }
+
+  try {
+    traverse(dirPath);
+  } catch (error) {
+    console.error('Error reading directory:', error);
+  }
+
+  return files;
+}
+
+// Handle getting files from folders
+ipcMain.handle('get-folder-contents', async (event, folderPaths) => {
+  try {
+    const allFolders = [];
+
+    for (const folderPath of folderPaths) {
+      const files = getFilesRecursively(folderPath);
+      allFolders.push({
+        path: folderPath,
+        name: path.basename(folderPath),
+        files: files,
+        fileCount: files.length
+      });
+    }
+
+    return { success: true, folders: allFolders };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
 });
 
 // Get list of repositories
