@@ -226,6 +226,36 @@ input[type="password"]:focus,
   border-bottom: none;
 }
 
+.folder-item {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #f0f8ff;
+  margin-bottom: 5px;
+  border-radius: 4px;
+}
+
+.folder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.folder-info {
+  flex: 1;
+}
+
+.folder-name {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+  font-size: 1.05em;
+}
+
+.folder-details {
+  font-size: 0.85em;
+  color: #666;
+}
+
 .file-info {
   flex: 1;
 }

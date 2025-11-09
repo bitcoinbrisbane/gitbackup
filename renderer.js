@@ -18,6 +18,7 @@ const newRepoPrivate = document.getElementById('new-repo-private');
 const createRepoSubmit = document.getElementById('create-repo-submit');
 const createRepoCancel = document.getElementById('create-repo-cancel');
 const selectFilesBtn = document.getElementById('select-files-btn');
+const selectFoldersBtn = document.getElementById('select-folders-btn');
 const filesList = document.getElementById('files-list');
 const backupPath = document.getElementById('backup-path');
 const backupBtn = document.getElementById('backup-btn');
@@ -45,6 +46,7 @@ const restoreResult = document.getElementById('restore-result');
 
 // State
 let selectedFiles = [];
+let selectedFolders = [];
 let selectedRestoreFiles = [];
 let currentRepo = '';
 
@@ -192,26 +194,77 @@ selectFilesBtn.addEventListener('click', async () => {
   }
 });
 
+// Folder selection
+selectFoldersBtn.addEventListener('click', async () => {
+  const result = await ipcRenderer.invoke('select-folders');
+
+  if (!result.canceled) {
+    selectFoldersBtn.disabled = true;
+    selectFoldersBtn.textContent = 'Loading folders...';
+
+    const folderContents = await ipcRenderer.invoke('get-folder-contents', result.folders);
+
+    if (folderContents.success) {
+      selectedFolders = [...selectedFolders, ...folderContents.folders];
+      renderFilesList();
+      backupBtn.style.display = 'block';
+    } else {
+      showError('Failed to read folders: ' + folderContents.error);
+    }
+
+    selectFoldersBtn.disabled = false;
+    selectFoldersBtn.textContent = '📁 Select Folders to Backup';
+  }
+});
+
 function renderFilesList() {
-  if (selectedFiles.length === 0) {
-    filesList.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📁</div><p>No files selected</p></div>';
+  if (selectedFiles.length === 0 && selectedFolders.length === 0) {
+    filesList.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📁</div><p>No files or folders selected</p></div>';
     backupBtn.style.display = 'none';
     return;
   }
 
-  filesList.innerHTML = selectedFiles.map((file, index) => `
-    <div class="file-item">
-      <div class="file-info">
-        <div class="file-name">📄 ${file.name}</div>
-        <div class="file-details">${formatSize(file.size)} - ${file.path}</div>
+  let html = '';
+
+  // Render folders
+  selectedFolders.forEach((folder, folderIndex) => {
+    const totalSize = folder.files.reduce((sum, file) => sum + file.size, 0);
+    html += `
+      <div class="folder-item">
+        <div class="folder-header">
+          <div class="folder-info">
+            <div class="folder-name">📁 ${escapeHtml(folder.name)}</div>
+            <div class="folder-details">${folder.fileCount} files - ${formatSize(totalSize)} - ${escapeHtml(folder.path)}</div>
+          </div>
+          <button class="remove-file-btn" onclick="removeFolder(${folderIndex})">Remove</button>
+        </div>
       </div>
-      <button class="remove-file-btn" onclick="removeFile(${index})">Remove</button>
-    </div>
-  `).join('');
+    `;
+  });
+
+  // Render individual files
+  selectedFiles.forEach((file, index) => {
+    html += `
+      <div class="file-item">
+        <div class="file-info">
+          <div class="file-name">📄 ${escapeHtml(file.name)}</div>
+          <div class="file-details">${formatSize(file.size)} - ${escapeHtml(file.path)}</div>
+        </div>
+        <button class="remove-file-btn" onclick="removeFile(${index})">Remove</button>
+      </div>
+    `;
+  });
+
+  filesList.innerHTML = html;
 }
 
 window.removeFile = (index) => {
   selectedFiles.splice(index, 1);
+  renderFilesList();
+};
+
+window.removeFolder = (index) => {
+  selectedFolders.splice(index, 1);
   renderFilesList();
 };
 
@@ -229,8 +282,8 @@ backupBtn.addEventListener('click', async () => {
     return;
   }
 
-  if (selectedFiles.length === 0) {
-    showError('Please select files to backup');
+  if (selectedFiles.length === 0 && selectedFolders.length === 0) {
+    showError('Please select files or folders to backup');
     return;
   }
 
@@ -241,22 +294,45 @@ backupBtn.addEventListener('click', async () => {
 
   const remotePath = backupPath.value.trim() || 'backups/';
   let uploaded = 0;
-  const total = selectedFiles.length;
   const errors = [];
 
-  for (const file of selectedFiles) {
-    const fileName = file.name;
-    const filePath = `${remotePath}${fileName}`;
+  // Collect all files to upload
+  const allFiles = [];
 
-    progressText.textContent = `Uploading ${uploaded + 1}/${total}: ${fileName}`;
+  // Add individual files
+  selectedFiles.forEach(file => {
+    allFiles.push({
+      absolutePath: file.path,
+      remotePath: `${remotePath}${file.name}`,
+      displayName: file.name
+    });
+  });
+
+  // Add files from folders
+  selectedFolders.forEach(folder => {
+    folder.files.forEach(file => {
+      // Preserve folder structure
+      const remoteFilePath = `${remotePath}${folder.name}/${file.relativePath}`;
+      allFiles.push({
+        absolutePath: file.absolutePath,
+        remotePath: remoteFilePath,
+        displayName: `${folder.name}/${file.relativePath}`
+      });
+    });
+  });
+
+  const total = allFiles.length;
+
+  for (const file of allFiles) {
+    progressText.textContent = `Uploading ${uploaded + 1}/${total}: ${file.displayName}`;
     progressFill.style.width = `${(uploaded / total) * 100}%`;
 
-    const result = await ipcRenderer.invoke('upload-file', file.path, repo, filePath);
+    const result = await ipcRenderer.invoke('upload-file', file.absolutePath, repo, file.remotePath);
 
     if (result.success) {
       uploaded++;
     } else {
-      errors.push(`${fileName}: ${result.error}`);
+      errors.push(`${file.displayName}: ${result.error}`);
     }
   }
 
@@ -268,6 +344,7 @@ backupBtn.addEventListener('click', async () => {
     backupResult.className = 'result-section success';
     backupResult.innerHTML = `<strong>✅ Success!</strong><br>Backed up ${uploaded} file(s) to ${escapeHtml(repo)}`;
     selectedFiles = [];
+    selectedFolders = [];
     renderFilesList();
   } else {
     backupResult.className = 'result-section error';
