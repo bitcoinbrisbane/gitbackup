@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitBackup - GitHub File Backup</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🔄 GitBackup</h1>
+      <p class="subtitle">Backup your files to GitHub</p>
+    </header>
+
+    <!-- Authentication Section -->
+    <div id="auth-section" class="section">
+      <h2>Authentication</h2>
+      <div id="auth-status" class="auth-status">
+        <span id="auth-message">Not authenticated</span>
+        <button id="logout-btn" class="btn btn-secondary" style="display: none;">Logout</button>
+      </div>
+      <div id="auth-form">
+        <input type="password" id="token-input" placeholder="Enter GitHub Personal Access Token" />
+        <button id="auth-btn" class="btn btn-primary">Authenticate</button>
+      </div>
+      <div class="info-box">
+        <p><strong>How to get a token:</strong></p>
+        <ol>
+          <li>Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)</li>
+          <li>Click "Generate new token (classic)"</li>
+          <li>Select scopes: <code>repo</code> (full control of repositories)</li>
+          <li>Generate token and paste it above</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- Backup Section -->
+    <div id="backup-section" class="section" style="display: none;">
+      <h2>Backup Files</h2>
+      
+      <div class="form-group">
+        <label>Select Repository:</label>
+        <select id="repo-select" class="select-input">
+          <option value="">Loading repositories...</option>
+        </select>
+        <button id="refresh-repos-btn" class="btn btn-small">↻ Refresh</button>
+        <button id="create-repo-btn" class="btn btn-small">+ New Repo</button>
+      </div>
+
+      <div id="create-repo-form" class="create-repo-form" style="display: none;">
+        <input type="text" id="new-repo-name" placeholder="Repository name" />
+        <label class="checkbox-label">
+          <input type="checkbox" id="new-repo-private" checked />
+          Private repository
+        </label>
+        <button id="create-repo-submit" class="btn btn-primary">Create</button>
+        <button id="create-repo-cancel" class="btn btn-secondary">Cancel</button>
+      </div>
+
+      <div class="form-group">
+        <button id="select-files-btn" class="btn btn-primary">📁 Select Files to Backup</button>
+      </div>
+
+      <div id="files-list" class="files-list"></div>
+
+      <div class="form-group">
+        <label>Backup Folder Path (in repository):</label>
+        <input type="text" id="backup-path" class="text-input" placeholder="backups/" value="backups/" />
+      </div>
+
+      <button id="backup-btn" class="btn btn-success" style="display: none;">🚀 Start Backup</button>
+      
+      <div id="backup-progress" class="progress-section" style="display: none;">
+        <div class="progress-bar">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+        <p id="progress-text">Uploading files...</p>
+      </div>
+
+      <div id="backup-result" class="result-section"></div>
+    </div>
+
+    <!-- Restore Section -->
+    <div id="restore-section" class="section" style="display: none;">
+      <h2>Restore Files</h2>
+      
+      <div class="form-group">
+        <label>Select Repository:</label>
+        <select id="restore-repo-select" class="select-input">
+          <option value="">Select a repository...</option>
+        </select>
+        <button id="refresh-restore-repos-btn" class="btn btn-small">↻ Refresh</button>
+      </div>
+
+      <div class="form-group">
+        <label>Repository Path:</label>
+        <input type="text" id="restore-path" class="text-input" placeholder="backups/" value="backups/" />
+        <button id="list-files-btn" class="btn btn-primary">📋 List Files</button>
+      </div>
+
+      <div id="restore-files-list" class="files-list"></div>
+
+      <div class="form-group" id="restore-location-group" style="display: none;">
+        <label>Restore Location:</label>
+        <input type="text" id="restore-location" class="text-input" placeholder="Select folder..." readonly />
+        <button id="select-folder-btn" class="btn btn-primary">📁 Select Folder</button>
+      </div>
+
+      <button id="restore-btn" class="btn btn-success" style="display: none;">📥 Restore Selected Files</button>
+
+      <div id="restore-progress" class="progress-section" style="display: none;">
+        <div class="progress-bar">
+          <div id="restore-progress-fill" class="progress-fill"></div>
+        </div>
+        <p id="restore-progress-text">Restoring files...</p>
+      </div>
+
+      <div id="restore-result" class="result-section"></div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tabs" style="display: none;">
+      <button class="tab-btn active" data-tab="backup">Backup</button>
+      <button class="tab-btn" data-tab="restore">Restore</button>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
